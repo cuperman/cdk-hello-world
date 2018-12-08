@@ -6,13 +6,17 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "npm run tslint",
+    "tslint": "tslint --project .",
     "watch": "tsc -w",
     "cdk": "cdk"
   },
   "devDependencies": {
     "@types/node": "^8.9.4",
-    "typescript": "^3.1.2",
-    "aws-cdk": "^0.19.0"
+    "aws-cdk": "^0.19.0",
+    "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.17.0",
+    "typescript": "^3.1.2"
   },
   "dependencies": {
     "@aws-cdk/assets": "^0.19.0",

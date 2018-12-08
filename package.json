@@ -2,7 +2,7 @@
   "name": "hello-world-cdk",
   "version": "0.1.0",
   "bin": {
-    "hello-world-cdk": "bin/hello-world-cdk.js"
+    "app": "bin/app.js"
   },
   "scripts": {
     "build": "tsc",

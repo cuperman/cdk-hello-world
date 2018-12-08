@@ -5,5 +5,8 @@ exports.handler = async (event: APIGatewayProxyEvent) => {
 
   const name = (queryParams && queryParams.name) || "World";
 
-  return `Hello, ${name}`;
+  return {
+    statusCode: 200,
+    body: JSON.stringify(`Hello, ${name}`)
+  };
 };

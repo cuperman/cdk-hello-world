@@ -1,11 +1,10 @@
 import { handler } from '../index';
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import ApiGatewayProxyEvent = require('../../../__fixtures__/api_gateway_proxy_event.json');
 
 describe('app-assets', () => {
   describe('index', () => {
     describe('handler', () => {
-      // FIXME: don't lie; use a fixture
-      let event = {} as APIGatewayProxyEvent;
+      let event = ApiGatewayProxyEvent;
 
       it('returns status code 200', async done => {
         const response = await handler(event);
@@ -19,15 +18,20 @@ describe('app-assets', () => {
         done();
       });
 
-      it('returns "Hello, Jeff" in body when name=Jeff is passed in query string', async done => {
-        event = Object.assign({}, event, {
-          queryStringParameters: {
-            name: 'Jeff'
-          }
+      describe('with query string name=Jeff', () => {
+        beforeEach(() => {
+          event = Object.assign({}, ApiGatewayProxyEvent, {
+            queryStringParameters: {
+              name: 'Jeff'
+            }
+          });
         });
-        const response = await handler(event);
-        expect(response.body).toEqual('"Hello, Jeff"');
-        done();
+
+        it('returns "Hello, Jeff" in body when name=Jeff is passed in query string', async done => {
+          const response = await handler(event);
+          expect(response.body).toEqual('"Hello, Jeff"');
+          done();
+        });
       });
     });
   });

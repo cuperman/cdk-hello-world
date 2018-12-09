@@ -10,16 +10,30 @@ import {
 } from '@aws-cdk/aws-codebuild';
 import { Pipeline, Stage } from '@aws-cdk/aws-codepipeline';
 import { PipelineSourceAction, RepositoryRef } from '@aws-cdk/aws-codecommit';
+import {
+  PipelineCreateReplaceChangeSetAction,
+  PipelineExecuteChangeSetAction,
+  CloudFormationCapabilities
+} from '@aws-cdk/aws-cloudformation';
+
+interface IPipelineStackProps extends StackProps {
+  appName: string;
+  environment: string;
+  repositoryName: string;
+  branchName: string;
+}
 
 export class PipelineStack extends Stack {
-  constructor(parent: App, name: string, props?: StackProps) {
+  constructor(parent: App, name: string, props: IPipelineStackProps) {
     super(parent, name, props);
 
-    const repository = RepositoryRef.import(this, 'Repository', {
-      repositoryName: 'hello-world-cdk'
-    });
+    const { appName, environment, repositoryName, branchName } = props;
 
-    const branchName = 'master';
+    const serviceStackName = `${appName}-Service-${environment}`;
+
+    const repository = RepositoryRef.import(this, 'Repository', {
+      repositoryName
+    });
 
     const artifactBucket = new Bucket(this, 'ArtifactBucket', {
       versioned: true
@@ -33,18 +47,6 @@ export class PipelineStack extends Stack {
       computeType: ComputeType.Small
     };
 
-    const testProject = new Project(this, 'TestProject', {
-      source: codePipelineSource,
-      buildSpec: 'lib/pipeline-stack/testspec.yml',
-      artifacts: codePipelineBuildArtifacts,
-      environment: buildEnvironment,
-      environmentVariables: {
-        NODE_ENV: {
-          value: 'development'
-        }
-      }
-    });
-
     const buildProject = new Project(this, 'BuildProject', {
       source: codePipelineSource,
       buildSpec: 'lib/pipeline-stack/buildspec.yml',
@@ -52,8 +54,6 @@ export class PipelineStack extends Stack {
       environment: buildEnvironment,
       environmentVariables: {
         NODE_ENV: {
-          // TODO: would prefer to build app in production mode
-          // value: 'production'
           value: 'development'
         }
       }
@@ -76,26 +76,39 @@ export class PipelineStack extends Stack {
       outputArtifactName: 'SourceCode'
     });
 
-    const testStage = new Stage(this, 'Test', {
-      pipeline
-    });
-
-    new PipelineBuildAction(this, 'RunUnitTests', {
-      stage: testStage,
-      project: testProject,
-      inputArtifact: fetchSourceAction.outputArtifact,
-      outputArtifactName: 'UnitTestResults'
-    });
-
     const buildStage = new Stage(this, 'Build', {
       pipeline
     });
 
-    new PipelineBuildAction(this, 'BuildApp', {
+    const buildAndTestServiceAction = new PipelineBuildAction(this, 'BuildAndTestService', {
       stage: buildStage,
       project: buildProject,
       inputArtifact: fetchSourceAction.outputArtifact,
-      outputArtifactName: 'App'
+      outputArtifactName: 'Service'
+    });
+
+    const deployStage = new Stage(this, 'Deploy', {
+      pipeline
+    });
+
+    new PipelineCreateReplaceChangeSetAction(this, 'CreateReplaceChangeSet', {
+      stage: deployStage,
+      stackName: serviceStackName,
+      changeSetName: serviceStackName,
+      capabilities: CloudFormationCapabilities.AnonymousIAM,
+      templatePath: buildAndTestServiceAction.outputArtifact.atPath('template.yml'),
+      templateConfiguration: fetchSourceAction.outputArtifact.atPath(
+        'lib/pipeline-stack/service-params.json'
+      ),
+      adminPermissions: true,
+      runOrder: 1
+    });
+
+    new PipelineExecuteChangeSetAction(this, 'ExecuteChangeSet', {
+      stage: deployStage,
+      stackName: serviceStackName,
+      changeSetName: serviceStackName,
+      runOrder: 2
     });
   }
 }

@@ -1,23 +1,29 @@
 import { App, Stack, StackProps } from '@aws-cdk/cdk';
 import { Runtime } from '@aws-cdk/aws-lambda';
 import { cloudformation } from '@aws-cdk/aws-serverless';
-import { ZipDirectoryAsset } from '@aws-cdk/assets';
+import { Parameter } from '@aws-cdk/cdk';
 
 const { FunctionResource } = cloudformation;
 
-export class AppStack extends Stack {
+export class ServiceStack extends Stack {
   constructor(parent: App, name: string, props?: StackProps) {
     super(parent, name, props);
 
-    const appAsset = new ZipDirectoryAsset(this, 'AppAsset', {
-      path: 'lib/service-asset'
+    const serviceBucket = new Parameter(this, 'ServiceBucket', {
+      type: 'String',
+      default: ''
+    });
+
+    const serviceObjectKey = new Parameter(this, 'ServiceObjectKey', {
+      type: 'String',
+      default: ''
     });
 
     new FunctionResource(this, 'HelloWorldFunction', {
       runtime: Runtime.NodeJS810.name,
       codeUri: {
-        bucket: appAsset.s3BucketName,
-        key: appAsset.s3ObjectKey
+        bucket: serviceBucket.value,
+        key: serviceObjectKey.value
       },
       handler: 'index.handler',
       events: {

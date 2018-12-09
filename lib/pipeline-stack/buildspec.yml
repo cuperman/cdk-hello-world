@@ -5,7 +5,10 @@ phases:
       - npm install
   build:
     commands:
+      - npm run tslint
+      - npm run jest
       - npm run build
+      - npm run --silent service:synth > lib/service-asset/template.yml
 artifacts:
   files:
     - '**/*'

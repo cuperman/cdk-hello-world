@@ -1,0 +1,6 @@
+{
+  "Parameters": {
+    "ServiceBucket": { "Fn::GetArtifactAtt": ["Service", "BucketName"] },
+    "ServiceObjectKey": { "Fn::GetArtifactAtt": ["Service", "ObjectKey"] }
+  }
+}

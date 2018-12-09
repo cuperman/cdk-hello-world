@@ -6,9 +6,16 @@ import { PipelineStack } from '../lib/pipeline-stack';
 const app = new App();
 const appName = 'HelloWorld';
 const appType = 'Pipeline';
-const environment = 'development';
+const environment = 'production';
+const repositoryName = 'hello-world-cdk';
+const branchName = 'master';
 const stackName = `${appName}-${appType}-${environment}`;
 
-new PipelineStack(app, stackName);
+new PipelineStack(app, stackName, {
+  appName,
+  environment,
+  repositoryName,
+  branchName
+});
 
 app.run();

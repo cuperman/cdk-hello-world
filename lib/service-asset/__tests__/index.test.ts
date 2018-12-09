@@ -1,7 +1,7 @@
 import { handler } from '../index';
 import ApiGatewayProxyEvent = require('../../../__fixtures__/api_gateway_proxy_event');
 
-describe('app-asset', () => {
+describe('service-asset', () => {
   describe('index', () => {
     describe('handler', () => {
       let event = ApiGatewayProxyEvent;

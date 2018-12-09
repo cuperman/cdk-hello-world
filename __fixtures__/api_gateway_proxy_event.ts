@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent } from '../lib/aws_lambda_overrides';
+import { APIGatewayProxyEvent } from '../lib/aws-lambda/overrides';
 
 export = {
   resource: '/',

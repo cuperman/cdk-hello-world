@@ -2,18 +2,29 @@
   "name": "hello-world-cdk",
   "version": "0.1.0",
   "bin": {
-    "app": "bin/app.js"
+    "service": "bin/service.js",
+    "pipeline": "bin/pipeline.js"
   },
   "scripts": {
     "build": "tsc",
     "cdk": "cdk",
     "jest": "jest --config jest.config.json --verbose",
+    "pipeline:deploy": "cdk --app 'node bin/pipeline.js' deploy",
+    "pipeline:diff": "cdk --app 'node bin/pipeline.js' diff",
+    "pipeline:list": "cdk --app 'node bin/pipeline.js' list",
+    "pipeline:synth": "cdk --app 'node bin/pipeline.js' synth",
+    "service:deploy": "cdk --app 'node bin/service.js' deploy",
+    "service:diff": "cdk --app 'node bin/service.js' diff",
+    "service:list": "cdk --app 'node bin/service.js' list",
+    "service:synth": "cdk --app 'node bin/service.js' synth",
     "test": "npm run tslint && npm run jest",
     "tslint": "tslint --project .",
     "watch": "tsc -w"
   },
   "dependencies": {
     "@aws-cdk/assets": "^0.19.0",
+    "@aws-cdk/aws-codebuild": "^0.19.0",
+    "@aws-cdk/aws-codepipeline": "^0.19.0",
     "@aws-cdk/aws-lambda": "^0.19.0",
     "@aws-cdk/aws-s3": "^0.19.0",
     "@aws-cdk/aws-serverless": "^0.19.0",

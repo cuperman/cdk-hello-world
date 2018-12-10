@@ -15,6 +15,7 @@ import {
   PipelineExecuteChangeSetAction,
   CloudFormationCapabilities
 } from '@aws-cdk/aws-cloudformation';
+import { PipelineDeployStackAction } from '@aws-cdk/app-delivery';
 
 interface IPipelineStackProps extends StackProps {
   appName: string;
@@ -87,6 +88,17 @@ export class PipelineStack extends Stack {
       outputArtifactName: 'Service'
     });
 
+    const pipelineStage = new Stage(this, 'Update', {
+      pipeline
+    });
+
+    new PipelineDeployStackAction(this, 'UpdatePipeline', {
+      stage: pipelineStage,
+      stack: this,
+      inputArtifact: buildAndTestServiceAction.outputArtifact,
+      adminPermissions: true
+    });
+
     const deployStage = new Stage(this, 'Deploy', {
       pipeline
     });
@@ -96,9 +108,11 @@ export class PipelineStack extends Stack {
       stackName: serviceStackName,
       changeSetName: serviceStackName,
       capabilities: CloudFormationCapabilities.AnonymousIAM,
-      templatePath: buildAndTestServiceAction.outputArtifact.atPath('template.yml'),
-      templateConfiguration: fetchSourceAction.outputArtifact.atPath(
-        'lib/pipeline-stack/service-params.json'
+      templatePath: buildAndTestServiceAction.outputArtifact.atPath(
+        `${serviceStackName}.template.yaml`
+      ),
+      templateConfiguration: buildAndTestServiceAction.outputArtifact.atPath(
+        `${serviceStackName}.params.json`
       ),
       adminPermissions: true,
       runOrder: 1

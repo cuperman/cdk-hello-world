@@ -8,8 +8,11 @@ phases:
       - npm run tslint
       - npm run jest
       - npm run build
-      - npm run --silent service:synth -- --context pipeline=true > lib/service-asset/template.yml
+      - export DIST=lib/service-asset
+      - cp ./lib/pipeline-stack/service-params.json $DIST/HelloWorld-Service-production.params.json
+      - npm run cdk -- synth --app 'node bin/pipeline-prod.js' --output $DIST
+      - npm run cdk -- synth --app 'node bin/service-prod.js' --output $DIST --context pipeline=true
 artifacts:
   files:
     - '**/*'
-  base-directory: 'lib/service-asset'
+  base-directory: '$DIST'

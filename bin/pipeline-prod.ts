@@ -11,7 +11,7 @@ const repositoryName = 'hello-world-cdk';
 const branchName = 'master';
 const stackName = `${appName}-${appType}-${environment}`;
 
-new PipelineStack(app, stackName, {
+exports = new PipelineStack(app, stackName, {
   appName,
   environment,
   repositoryName,

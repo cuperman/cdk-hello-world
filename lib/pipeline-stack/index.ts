@@ -25,34 +25,42 @@ interface IPipelineStackProps extends StackProps {
 }
 
 export class PipelineStack extends Stack {
+  public repository: RepositoryRef;
+  public artifactBucket: Bucket;
+  public buildProject: Project;
+  public pipeline: Pipeline;
+  public sourceStage: Stage;
+  public fetchSourceAction: PipelineSourceAction;
+  public buildStage: Stage;
+  public buildAndTestServiceAction: PipelineBuildAction;
+  public updateStage: Stage;
+  public pipelineDeployStackAction: PipelineDeployStackAction;
+  public deployStage: Stage;
+  public pipelineCreateReplaceChangeSetAction: PipelineCreateReplaceChangeSetAction;
+  public pipelineExecuteChangeSetAction: PipelineExecuteChangeSetAction;
+
   constructor(parent: App, name: string, props: IPipelineStackProps) {
     super(parent, name, props);
 
     const { appName, environment, repositoryName, branchName } = props;
-
     const serviceStackName = `${appName}-Service-${environment}`;
 
-    const repository = RepositoryRef.import(this, 'Repository', {
+    this.repository = RepositoryRef.import(this, 'Repository', {
       repositoryName
     });
 
-    const artifactBucket = new Bucket(this, 'ArtifactBucket', {
+    this.artifactBucket = new Bucket(this, 'ArtifactBucket', {
       versioned: true
     });
 
-    const codePipelineSource = new CodePipelineSource();
-    const codePipelineBuildArtifacts = new CodePipelineBuildArtifacts();
-
-    const buildEnvironment = {
-      buildImage: LinuxBuildImage.UBUNTU_14_04_NODEJS_8_11_0,
-      computeType: ComputeType.Small
-    };
-
-    const buildProject = new Project(this, 'BuildProject', {
-      source: codePipelineSource,
+    this.buildProject = new Project(this, 'BuildProject', {
+      source: new CodePipelineSource(),
       buildSpec: 'lib/pipeline-stack/buildspec.yml',
-      artifacts: codePipelineBuildArtifacts,
-      environment: buildEnvironment,
+      artifacts: new CodePipelineBuildArtifacts(),
+      environment: {
+        buildImage: LinuxBuildImage.UBUNTU_14_04_NODEJS_8_11_0,
+        computeType: ComputeType.Small
+      },
       environmentVariables: {
         NODE_ENV: {
           value: 'development'
@@ -60,69 +68,77 @@ export class PipelineStack extends Stack {
       }
     });
 
-    const pipeline = new Pipeline(this, 'Pipeline', {
-      artifactBucket,
+    this.pipeline = new Pipeline(this, 'Pipeline', {
+      artifactBucket: this.artifactBucket,
       restartExecutionOnUpdate: true
     });
 
-    const sourceStage = new Stage(this, 'Source', {
-      pipeline
+    this.sourceStage = new Stage(this, 'Source', {
+      pipeline: this.pipeline
     });
 
-    const fetchSourceAction = new PipelineSourceAction(this, 'FetchSource', {
-      stage: sourceStage,
-      repository,
+    this.fetchSourceAction = new PipelineSourceAction(this, 'FetchSource', {
+      stage: this.sourceStage,
+      repository: this.repository,
       branch: branchName,
       pollForSourceChanges: false,
       outputArtifactName: 'SourceCode'
     });
 
-    const buildStage = new Stage(this, 'Build', {
-      pipeline
+    this.buildStage = new Stage(this, 'Build', {
+      pipeline: this.pipeline
     });
 
-    const buildAndTestServiceAction = new PipelineBuildAction(this, 'BuildAndTestService', {
-      stage: buildStage,
-      project: buildProject,
-      inputArtifact: fetchSourceAction.outputArtifact,
+    this.buildAndTestServiceAction = new PipelineBuildAction(this, 'BuildAndTestService', {
+      stage: this.buildStage,
+      project: this.buildProject,
+      inputArtifact: this.fetchSourceAction.outputArtifact,
       outputArtifactName: 'Service'
     });
 
-    const pipelineStage = new Stage(this, 'Update', {
-      pipeline
+    this.updateStage = new Stage(this, 'Update', {
+      pipeline: this.pipeline
     });
 
-    new PipelineDeployStackAction(this, 'UpdatePipeline', {
-      stage: pipelineStage,
+    this.pipelineDeployStackAction = new PipelineDeployStackAction(this, 'UpdatePipeline', {
+      stage: this.updateStage,
       stack: this,
-      inputArtifact: buildAndTestServiceAction.outputArtifact,
+      inputArtifact: this.buildAndTestServiceAction.outputArtifact,
       adminPermissions: true
     });
 
-    const deployStage = new Stage(this, 'Deploy', {
-      pipeline
+    this.deployStage = new Stage(this, 'Deploy', {
+      pipeline: this.pipeline
     });
 
-    new PipelineCreateReplaceChangeSetAction(this, 'CreateReplaceChangeSet', {
-      stage: deployStage,
-      stackName: serviceStackName,
-      changeSetName: serviceStackName,
-      capabilities: CloudFormationCapabilities.AnonymousIAM,
-      templatePath: buildAndTestServiceAction.outputArtifact.atPath(
-        `${serviceStackName}.template.yaml`
-      ),
-      templateConfiguration: buildAndTestServiceAction.outputArtifact.atPath(
-        `${serviceStackName}.params.json`
-      ),
-      adminPermissions: true,
-      runOrder: 1
-    });
+    this.pipelineCreateReplaceChangeSetAction = new PipelineCreateReplaceChangeSetAction(
+      this,
+      'CreateReplaceChangeSet',
+      {
+        stage: this.deployStage,
+        stackName: serviceStackName,
+        changeSetName: serviceStackName,
+        capabilities: CloudFormationCapabilities.AnonymousIAM,
+        templatePath: this.buildAndTestServiceAction.outputArtifact.atPath(
+          `${serviceStackName}.template.yaml`
+        ),
+        templateConfiguration: this.buildAndTestServiceAction.outputArtifact.atPath(
+          `${serviceStackName}.params.json`
+        ),
+        adminPermissions: true,
+        runOrder: 1
+      }
+    );
 
-    new PipelineExecuteChangeSetAction(this, 'ExecuteChangeSet', {
-      stage: deployStage,
-      stackName: serviceStackName,
-      changeSetName: serviceStackName,
-      runOrder: 2
-    });
+    this.pipelineExecuteChangeSetAction = new PipelineExecuteChangeSetAction(
+      this,
+      'ExecuteChangeSet',
+      {
+        stage: this.deployStage,
+        stackName: serviceStackName,
+        changeSetName: serviceStackName,
+        runOrder: 2
+      }
+    );
   }
 }

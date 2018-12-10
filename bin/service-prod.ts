@@ -9,6 +9,6 @@ const appType = 'Service';
 const environment = 'production';
 const stackName = `${appName}-${appType}-${environment}`;
 
-new ServiceStack(app, stackName);
+exports = new ServiceStack(app, stackName);
 
 app.run();

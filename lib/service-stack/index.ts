@@ -4,36 +4,38 @@ import { cloudformation } from '@aws-cdk/aws-serverless';
 import { Parameter } from '@aws-cdk/cdk';
 import { ZipDirectoryAsset } from '@aws-cdk/assets';
 
-const { FunctionResource } = cloudformation;
-
 export class ServiceStack extends Stack {
+  public serviceBucket: Parameter;
+  public serviceObjectKey: Parameter;
+  public serviceAsset: ZipDirectoryAsset;
+  public helloWorldFunction: cloudformation.FunctionResource;
+
   constructor(parent: App, name: string, props?: StackProps) {
     super(parent, name, props);
 
     const pipeline = this.getContext('pipeline');
 
-    const serviceBucket = new Parameter(this, 'ServiceBucket', {
+    this.serviceBucket = new Parameter(this, 'ServiceBucket', {
       type: 'String',
       default: ''
     });
 
-    const serviceObjectKey = new Parameter(this, 'ServiceObjectKey', {
+    this.serviceObjectKey = new Parameter(this, 'ServiceObjectKey', {
       type: 'String',
       default: ''
     });
 
-    let serviceAsset;
     if (!pipeline) {
-      serviceAsset = new ZipDirectoryAsset(this, 'ServiceAsset', {
+      this.serviceAsset = new ZipDirectoryAsset(this, 'ServiceAsset', {
         path: 'lib/service-asset'
       });
     }
 
-    new FunctionResource(this, 'HelloWorldFunction', {
+    this.helloWorldFunction = new cloudformation.FunctionResource(this, 'HelloWorldFunction', {
       runtime: Runtime.NodeJS810.name,
       codeUri: {
-        bucket: serviceAsset ? serviceAsset.s3BucketName : serviceBucket.value,
-        key: serviceAsset ? serviceAsset.s3ObjectKey : serviceObjectKey.value
+        bucket: this.serviceAsset ? this.serviceAsset.s3BucketName : this.serviceBucket.value,
+        key: this.serviceAsset ? this.serviceAsset.s3ObjectKey : this.serviceObjectKey.value
       },
       handler: 'index.handler',
       events: {

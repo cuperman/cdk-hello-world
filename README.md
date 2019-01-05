@@ -1,3 +1,16 @@
+# Getting Started
+
+```bash
+# local dev tasks
+nvm use
+npm test
+npm run build
+npm run service:deploy
+
+# deploy production pipeline
+npm run pipeline:deploy
+```
+
 # Useful commands
 
 - `npm run build` compile typescript to js
